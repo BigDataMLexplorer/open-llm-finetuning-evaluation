@@ -9,21 +9,33 @@ jobs:
         with:
           python-version: '3.12'
           cache: pip
-      - run: pip install -e '.[dev]'
-      - run: python -m compileall -q src scripts tests recipes
-      - run: pytest -q
-      - run: PYTHONPATH=src python scripts/run_benchmark.py
-      - run: PYTHONPATH=src python scripts/plot_benchmark.py
-      - run: pip install playwright && python -m playwright install chromium
+      - name: Install CPU benchmark stack
+        run: |
+          pip install --index-url https://download.pytorch.org/whl/cpu 'torch>=2.4'
+          pip install -e . --no-deps
+          pip install 'numpy>=2.0' 'scikit-learn>=1.5' 'pytest>=8.3' 'matplotlib>=3.9' 'playwright>=1.50'
+      - name: Compile
+        run: python -m compileall -q src scripts tests recipes
+      - name: Tests
+        run: pytest -q
+      - name: Reproduce 3-seed benchmark
+        run: PYTHONPATH=src python scripts/run_benchmark.py
+      - name: Build benchmark chart
+        run: PYTHONPATH=src python scripts/plot_benchmark.py
+      - name: Install Chromium
+        run: python -m playwright install chromium
       - name: Start static report server
         run: |
           python -m http.server 8000 >/tmp/report.log 2>&1 &
           echo $! >/tmp/report.pid
           sleep 2
-      - run: python scripts/capture_assets.py
-      - if: always()
+      - name: Capture portfolio assets
+        run: python scripts/capture_assets.py
+      - name: Stop static server
+        if: always()
         run: if [ -f /tmp/report.pid ]; then kill "$(cat /tmp/report.pid)" || true; fi
-      - uses: actions/upload-artifact@v4
+      - name: Upload portfolio artifacts
+        uses: actions/upload-artifact@v4
         with:
           name: finetuning-evaluation-portfolio
           path: |
