@@ -1,0 +1,33 @@
+name: CI
+on: [push, pull_request]
+jobs:
+  test-benchmark-assets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - run: pip install -e '.[dev]'
+      - run: python -m compileall -q src scripts tests recipes
+      - run: pytest -q
+      - run: PYTHONPATH=src python scripts/run_benchmark.py
+      - run: PYTHONPATH=src python scripts/plot_benchmark.py
+      - run: pip install playwright && python -m playwright install chromium
+      - name: Start static report server
+        run: |
+          python -m http.server 8000 >/tmp/report.log 2>&1 &
+          echo $! >/tmp/report.pid
+          sleep 2
+      - run: python scripts/capture_assets.py
+      - if: always()
+        run: if [ -f /tmp/report.pid ]; then kill "$(cat /tmp/report.pid)" || true; fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: finetuning-evaluation-portfolio
+          path: |
+            artifacts/benchmark.json
+            artifacts/retention_benchmark.png
+            artifacts/experiment_dashboard.png
+            artifacts/architecture_process.png

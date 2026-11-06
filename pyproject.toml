@@ -1,0 +1,21 @@
+[project]
+name = "open-llm-finetuning-evaluation"
+version = "0.1.0"
+description = "Reproducible PEFT fine-tuning and retention evaluation lab"
+requires-python = ">=3.11"
+dependencies = ["torch>=2.4", "numpy>=2.0", "scikit-learn>=1.5"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.3", "matplotlib>=3.9", "playwright>=1.50"]
+gpu = ["transformers>=5.0", "datasets>=4.0", "peft>=0.18", "trl>=1.0", "accelerate>=1.0"]
+
+[build-system]
+requires=["setuptools>=75","wheel"]
+build-backend="setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where=["src"]
+
+[tool.pytest.ini_options]
+pythonpath=["src"]
+testpaths=["tests"]
